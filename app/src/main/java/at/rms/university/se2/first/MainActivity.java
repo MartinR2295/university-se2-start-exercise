@@ -5,17 +5,22 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.google.android.material.textfield.TextInputEditText;
 
+import java.io.IOException;
+
+import at.rms.university.se2.first.network.SE2Client;
 import at.rms.university.se2.first.utils.MathUtil;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, SE2Client.Response {
 
     Button btnSend, btnCalc;
     TextView tvAnswer;
     TextInputEditText tiInput;
+    ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,12 +32,50 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         btnCalc = findViewById(R.id.btnCalc);
         tvAnswer = findViewById(R.id.tvAnswer);
         tiInput = findViewById(R.id.tiInput);
+        progressBar = findViewById(R.id.progressBar);
 
         // set click listeners
         btnSend.setOnClickListener(this);
         btnCalc.setOnClickListener(this);
+
+        // hide progress bar (do it here, to see the element in the xml viewer)
+        progressBar.setVisibility(View.GONE);
     }
 
+    /**
+     * server response from se2 server
+     * @return
+     */
+    @Override
+    public void onSE2ServerResponse(String response) {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                tvAnswer.setText(response);
+            }
+        });
+    }
+
+    @Override
+    public void onSE2ServerError(IOException e) {
+        // in the case we want to show an error
+    }
+
+    @Override
+    public void onSE2ServerFinished() {
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                // hide progress bar if we are finished
+                progressBar.setVisibility(View.GONE);
+            }
+        });
+    }
+
+    /**
+     * implemented click listener
+     * @param view
+     */
     public void onClick(View view) {
         // compare reference of view to reference of the buttons, to decide the related action
         if (view == btnSend) {
@@ -47,7 +90,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
      * Related to exercise 2.1
      */
     public void onBtnSend() {
-        tvAnswer.setText("Works :)"+tiInput.getText().toString());
+        SE2Client client = new SE2Client(this, tiInput.getText().toString());
+        progressBar.setVisibility(View.VISIBLE);
+        client.start();
     }
 
     /**
